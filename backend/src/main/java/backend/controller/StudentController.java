@@ -1,5 +1,6 @@
 package backend.controller;
 
+import backend.dto.response.StudentResponse;
 import backend.model.Student;
 import backend.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,29 +23,54 @@ public class StudentController {
         return studentRepository.findAll();
     }
 
-    // Get Student by ID
+// Get Student by ID (Clean DTO Output)
     @GetMapping("/{id}")
-    public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
-        return studentRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<StudentResponse> getStudentById(@PathVariable Long id) {
+        return studentRepository.findById(id).map(student -> {
+            String username = (student.getUser() != null) ? student.getUser().getUsername() : null;
+            StudentResponse response = new StudentResponse(
+                student.getId(),
+                student.getFirstName(),
+                student.getLastName(),
+                student.getEmail(),
+                student.getPhone(),
+                username
+            );
+            return ResponseEntity.ok(response);
+        }).orElse(ResponseEntity.notFound().build());
     }
 
-    // Add Student Profile
+// Add Student Profile
     @PostMapping
-    public Student createStudent(@RequestBody Student student) {
-        return studentRepository.save(student);
+    public ResponseEntity<?> createStudent(@RequestBody Student student) {
+        if (studentRepository.findAll().stream().anyMatch(s -> s.getEmail().equals(student.getEmail()))) {
+            return ResponseEntity.badRequest().body("Student email is already in use!");
+        }
+        Student savedStudent = studentRepository.save(student);
+        return ResponseEntity.ok(savedStudent);
     }
 
-    // Update Student
+// Update Student Profile (Clean Response)
     @PutMapping("/{id}")
-    public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
+    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
         return studentRepository.findById(id).map(student -> {
             student.setFirstName(studentDetails.getFirstName());
             student.setLastName(studentDetails.getLastName());
             student.setEmail(studentDetails.getEmail());
             student.setPhone(studentDetails.getPhone());
-            return ResponseEntity.ok(studentRepository.save(student));
+            
+            Student updatedStudent = studentRepository.save(student);
+            String username = (updatedStudent.getUser() != null) ? updatedStudent.getUser().getUsername() : null;
+
+            StudentResponse response = new StudentResponse(
+                updatedStudent.getId(),
+                updatedStudent.getFirstName(),
+                updatedStudent.getLastName(),
+                updatedStudent.getEmail(),
+                updatedStudent.getPhone(),
+                username
+            );
+            return ResponseEntity.ok(response);
         }).orElse(ResponseEntity.notFound().build());
     }
 
