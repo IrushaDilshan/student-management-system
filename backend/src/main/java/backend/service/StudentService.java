@@ -22,7 +22,7 @@ public class StudentService {
     @Autowired
     private UserRepository userRepository;
 
-    // 🔐 JWT Token එකේ ඉන්න Logged-in User ව auto-link කරලා Profile එක හදනවා (Option A)
+    // JWT Token, Logged-in User , auto-link & Profile create
     public StudentResponse createStudentProfile(Student student, String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
@@ -32,7 +32,7 @@ public class StudentService {
             throw new RuntimeException("Student email is already in use!");
         }
 
-        student.setUser(user); // complete user object එක auto-link වෙනවා
+        student.setUser(user); // complete user object , auto-link 
         Student savedStudent = studentRepository.save(student);
 
         return mapToStudentResponse(savedStudent);
@@ -50,7 +50,7 @@ public List<StudentResponse> getAllStudents() {
         return studentRepository.findById(id).map(this::mapToStudentResponse);
     }
 
-    // Logged-in User ගේ Profile එක විතරක් ගන්න
+    // Logged-in User only see Profile 
     public Optional<StudentResponse> getMyProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));

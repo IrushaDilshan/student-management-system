@@ -1,12 +1,12 @@
 package backend.controller;
 
+import backend.config.JwtUtils;
 import backend.dto.request.LoginRequest;
 import backend.dto.request.StudentSignupRequest;
 import backend.dto.response.JwtResponse;
 import backend.dto.response.UserResponse;
 import backend.model.User;
 import backend.repository.UserRepository;
-import backend.security.JwtUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

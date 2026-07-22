@@ -1,6 +1,5 @@
 package backend.config;
 
-import backend.security.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
