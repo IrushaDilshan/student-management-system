@@ -1,60 +1,53 @@
 package backend.controller;
 
 import backend.model.Teacher;
-import backend.repository.TeacherRepository;
+import backend.service.TeacherService;
+import backend.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/teachers")
 @CrossOrigin(origins = "*")
+@PreAuthorize("hasRole('ADMIN')")
 public class TeacherController {
 
     @Autowired
-    private TeacherRepository teacherRepository;
+    private TeacherService teacherService;
 
     // Get All Teachers (Admin / System Management)
     @GetMapping
     public List<Teacher> getAllTeachers() {
-        return teacherRepository.findAll();
+        return teacherService.getAllTeachers();
     }
 
     // Get Teacher by ID
     @GetMapping("/{id}")
     public ResponseEntity<Teacher> getTeacherById(@PathVariable Long id) {
-        return teacherRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(teacherService.getTeacherById(id));
     }
 
     // Create Teacher Profile
     @PostMapping
-    public Teacher createTeacher(@RequestBody Teacher teacher) {
-        return teacherRepository.save(teacher);
+    public Teacher createTeacher(@Valid @RequestBody Teacher teacher) {
+        return teacherService.createTeacher(teacher);
     }
 
     // Update Teacher Profile
     @PutMapping("/{id}")
-    public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @RequestBody Teacher teacherDetails) {
-        return teacherRepository.findById(id).map(teacher -> {
-            teacher.setFirstName(teacherDetails.getFirstName());
-            teacher.setLastName(teacherDetails.getLastName());
-            teacher.setEmail(teacherDetails.getEmail());
-            teacher.setPhone(teacherDetails.getPhone());
-            teacher.setDepartment(teacherDetails.getDepartment());
-            return ResponseEntity.ok(teacherRepository.save(teacher));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @Valid @RequestBody Teacher teacherDetails) {
+        return ResponseEntity.ok(teacherService.updateTeacher(id, teacherDetails));
     }
 
     // Delete Teacher Profile
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTeacher(@PathVariable Long id) {
-        return teacherRepository.findById(id).map(teacher -> {
-            teacherRepository.delete(teacher);
-            return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+        teacherService.deleteTeacher(id);
+        return ResponseEntity.ok().build();
     }
 }

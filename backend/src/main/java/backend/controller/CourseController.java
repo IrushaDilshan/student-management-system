@@ -1,10 +1,13 @@
 package backend.controller;
 
 import backend.model.Course;
-import backend.repository.CourseRepository;
+import backend.service.CourseService;
+import backend.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -14,38 +17,33 @@ import java.util.List;
 public class CourseController {
 
     @Autowired
-    private CourseRepository courseRepository;
+    private CourseService courseService;
 
     // Get All Courses
     @GetMapping
     public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+        return courseService.getAllCourses();
     }
 
     // Add New Course
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
-        return courseRepository.save(course);
+    public Course createCourse(@Valid @RequestBody Course course) {
+        return courseService.createCourse(course);
     }
 
     // Update Course
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @RequestBody Course courseDetails) {
-        return courseRepository.findById(id).map(course -> {
-            course.setCourseCode(courseDetails.getCourseCode());
-            course.setCourseName(courseDetails.getCourseName());
-            course.setDescription(courseDetails.getDescription());
-            course.setCredits(courseDetails.getCredits());
-            return ResponseEntity.ok(courseRepository.save(course));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course courseDetails) {
+        return ResponseEntity.ok(courseService.updateCourse(id, courseDetails));
     }
 
     // Delete Course
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCourse(@PathVariable Long id) {
-        return courseRepository.findById(id).map(course -> {
-            courseRepository.delete(course);
-            return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+        courseService.deleteCourse(id);
+        return ResponseEntity.ok().build();
     }
 }
