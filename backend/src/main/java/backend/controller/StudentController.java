@@ -3,10 +3,12 @@ package backend.controller;
 import backend.dto.response.StudentResponse;
 import backend.model.Student;
 import backend.service.StudentService;
+import backend.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -27,9 +29,9 @@ public List<StudentResponse> getAllStudents() {
     // Get Student by ID
     @GetMapping("/{id}")
     public ResponseEntity<StudentResponse> getStudentById(@PathVariable Long id) {
-        return studentService.getStudentById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        StudentResponse student = studentService.getStudentById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with id " + id));
+        return ResponseEntity.ok(student);
     }
 
     // 🔐 Logged-in User ගේ My Profile එක ගන්න (GET /api/students/me)
@@ -39,14 +41,14 @@ public List<StudentResponse> getAllStudents() {
             return ResponseEntity.status(401).body("Unauthorized");
         }
         String username = authentication.getName();
-        return studentService.getMyProfile(username)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        StudentResponse profile = studentService.getMyProfile(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found for user: " + username));
+        return ResponseEntity.ok(profile);
     }
 
     // 🔐 Add Student Profile (JWT Token එකෙන් Logged-in User ව Auto Select කර ගනී)
     @PostMapping
-    public ResponseEntity<?> createStudent(@RequestBody Student student, Authentication authentication) {
+    public ResponseEntity<?> createStudent(@Valid @RequestBody Student student, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body("Unauthorized: Please log in first.");
         }
@@ -62,10 +64,10 @@ public List<StudentResponse> getAllStudents() {
 
     // Update Student Profile
     @PutMapping("/{id}")
-    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
-        return studentService.updateStudent(id, studentDetails)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @Valid @RequestBody Student studentDetails) {
+        StudentResponse updatedStudent = studentService.updateStudent(id, studentDetails)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with id " + id));
+        return ResponseEntity.ok(updatedStudent);
     }
 
     // Delete Student
@@ -74,6 +76,6 @@ public List<StudentResponse> getAllStudents() {
         if (studentService.deleteStudent(id)) {
             return ResponseEntity.ok().build();
         }
-        return ResponseEntity.notFound().build();
+        throw new ResourceNotFoundException("Student not found with id " + id);
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +34,7 @@ public class AuthController {
 
     // Student Self-Registration API
     @PostMapping("/student/signup")
-    public ResponseEntity<?> registerStudent(@RequestBody StudentSignupRequest request) {
+    public ResponseEntity<?> registerStudent(@Valid @RequestBody StudentSignupRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body("Username is already taken!");
         }
@@ -61,12 +63,14 @@ public class AuthController {
     }
 
     // Admin Pending List
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/pending-students")
     public List<User> getPendingStudents() {
         return userRepository.findByStatus("PENDING");
     }
 
     // Admin Approve/Reject
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/admin/approve-student/{id}")
     public ResponseEntity<?> approveStudent(@PathVariable Long id, @RequestParam String status) {
         Optional<User> userOptional = userRepository.findById(id);
@@ -84,7 +88,7 @@ public class AuthController {
 
     // Login API
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElse(null);
 
