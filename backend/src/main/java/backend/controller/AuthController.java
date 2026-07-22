@@ -1,11 +1,16 @@
 package backend.controller;
 
+import backend.dto.request.LoginRequest;
 import backend.dto.request.StudentSignupRequest;
+import backend.dto.response.JwtResponse;
 import backend.dto.response.UserResponse;
 import backend.model.User;
 import backend.repository.UserRepository;
+import backend.security.JwtUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +24,12 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
     // Student Self-Registration API
     @PostMapping("/student/signup")
     public ResponseEntity<?> registerStudent(@RequestBody StudentSignupRequest request) {
@@ -29,7 +40,10 @@ public class AuthController {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        
+        // 🔐 Password එක BCrypt වලින් Encrypt කරලා Save කිරීම
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        
         user.setRole("STUDENT");
         user.setStatus("PENDING");
 
@@ -66,5 +80,31 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Invalid operation or status!");
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // Login API
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElse(null);
+
+        if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest().body("Error: Invalid username or password!");
+        }
+
+        if ("PENDING".equalsIgnoreCase(user.getStatus())) {
+            return ResponseEntity.badRequest().body("Error: Account is pending admin approval!");
+        }
+
+        String token = jwtUtils.generateJwtToken(user.getUsername(), user.getRole());
+
+        return ResponseEntity.ok(new JwtResponse(
+                token,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole(),
+                user.getStatus()
+        ));
     }
 }

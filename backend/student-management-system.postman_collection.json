@@ -1,0 +1,583 @@
+{
+  "info": {
+    "_postman_id": "c0f4d8d7-5d41-4f34-8f0c-3cf0c1f0a001",
+    "name": "Student Management System API",
+    "description": "Postman collection for the Spring Boot student management backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Student Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/student/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "student",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"student.john\",\n  \"email\": \"student.john@example.com\",\n  \"password\": \"P@ssw0rd123\"\n}"
+            },
+            "description": "Registers a new student account with PENDING status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contains user details', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json.username).to.eql('student.john');",
+                  "  pm.expect(json.email).to.eql('student.john@example.com');",
+                  "  pm.expect(json.role).to.eql('STUDENT');",
+                  "  pm.expect(json.status).to.eql('PENDING');",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('studentUserId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Pending Students",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/admin/pending-students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "admin",
+                "pending-students"
+              ]
+            },
+            "description": "Returns all users currently waiting for approval."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Student",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/admin/approve-student/{{studentUserId}}?status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "admin",
+                "approve-student",
+                "{{studentUserId}}"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            },
+            "description": "Approves or rejects a pending student. Use ACTIVE or REJECTED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Approval message is returned', function () {",
+                  "  pm.expect(pm.response.text()).to.include('Student status updated to: ACTIVE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Add Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/add-teacher",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "add-teacher"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"teacher.mary\",\n  \"email\": \"teacher.mary@example.com\",\n  \"password\": \"P@ssw0rd123\"\n}"
+            },
+            "description": "Creates a teacher user with TEACHER role and ACTIVE status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Success message is returned', function () {",
+                  "  pm.expect(pm.response.text()).to.include('Teacher added successfully with ACTIVE status!');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Get All Courses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/courses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses"
+              ]
+            },
+            "description": "Fetches every course in the system."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseCode\": \"CS101\",\n  \"courseName\": \"Introduction to Computer Science\",\n  \"description\": \"Foundations of programming and computing\",\n  \"credits\": 3\n}"
+            },
+            "description": "Creates a new course record."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Course data is returned', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json.courseCode).to.eql('CS101');",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('courseId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/{{courseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "{{courseId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseCode\": \"CS101\",\n  \"courseName\": \"Introduction to Computer Science - Updated\",\n  \"description\": \"Updated course description\",\n  \"credits\": 4\n}"
+            },
+            "description": "Updates an existing course by id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Updated course is returned', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.courseName).to.eql('Introduction to Computer Science - Updated');",
+                  "  pm.expect(json.credits).to.eql(4);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Course",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/{{courseId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "{{courseId}}"
+              ]
+            },
+            "description": "Deletes a course by id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response body is empty', function () {",
+                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students"
+              ]
+            },
+            "description": "Returns every student profile."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "  pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Student By Id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/students/{{studentProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{studentProfileId}}"
+              ]
+            },
+            "description": "Gets a single student profile by id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Student id matches the request variable', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id.toString()).to.eql(pm.variables.get('studentProfileId').toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Student Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"0771234567\",\n  \"user\": {\n    \"id\": {{studentUserId}}\n  }\n}"
+            },
+            "description": "Creates a student profile. The user.id should reference a valid registered student user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Student profile is returned', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.expect(json.firstName).to.eql('John');",
+                  "  pm.expect(json.lastName).to.eql('Doe');",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('studentProfileId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Student Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/{{studentProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{studentProfileId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Johnathan\",\n  \"lastName\": \"Doe\",\n  \"email\": \"johnathan.doe@example.com\",\n  \"phone\": \"0777654321\"\n}"
+            },
+            "description": "Updates an existing student profile by id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Updated student profile is returned', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.firstName).to.eql('Johnathan');",
+                  "  pm.expect(json.email).to.eql('johnathan.doe@example.com');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Student Profile",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/students/{{studentProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "{{studentProfileId}}"
+              ]
+            },
+            "description": "Deletes a student profile by id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response body is empty', function () {",
+                  "  pm.expect(pm.response.text()).to.eql('');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "studentUserId",
+      "value": "1"
+    },
+    {
+      "key": "studentProfileId",
+      "value": "1"
+    },
+    {
+      "key": "courseId",
+      "value": "1"
+    }
+  ]
+}
