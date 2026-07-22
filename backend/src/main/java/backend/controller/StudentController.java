@@ -2,9 +2,10 @@ package backend.controller;
 
 import backend.dto.response.StudentResponse;
 import backend.model.Student;
-import backend.repository.StudentRepository;
+import backend.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,71 +16,64 @@ import java.util.List;
 public class StudentController {
 
     @Autowired
-    private StudentRepository studentRepository;
+    private StudentService studentService;
 
     // Get All Students
-    @GetMapping
-    public List<Student> getAllStudents() {
-        return studentRepository.findAll();
-    }
+@GetMapping
+public List<StudentResponse> getAllStudents() {
+    return studentService.getAllStudents();
+}
 
-// Get Student by ID (Clean DTO Output)
+    // Get Student by ID
     @GetMapping("/{id}")
     public ResponseEntity<StudentResponse> getStudentById(@PathVariable Long id) {
-        return studentRepository.findById(id).map(student -> {
-            String username = (student.getUser() != null) ? student.getUser().getUsername() : null;
-            StudentResponse response = new StudentResponse(
-                student.getId(),
-                student.getFirstName(),
-                student.getLastName(),
-                student.getEmail(),
-                student.getPhone(),
-                username
-            );
-            return ResponseEntity.ok(response);
-        }).orElse(ResponseEntity.notFound().build());
+        return studentService.getStudentById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-// Add Student Profile
-    @PostMapping
-    public ResponseEntity<?> createStudent(@RequestBody Student student) {
-        if (studentRepository.findAll().stream().anyMatch(s -> s.getEmail().equals(student.getEmail()))) {
-            return ResponseEntity.badRequest().body("Student email is already in use!");
+    // 🔐 Logged-in User ගේ My Profile එක ගන්න (GET /api/students/me)
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Unauthorized");
         }
-        Student savedStudent = studentRepository.save(student);
-        return ResponseEntity.ok(savedStudent);
+        String username = authentication.getName();
+        return studentService.getMyProfile(username)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-// Update Student Profile (Clean Response)
+    // 🔐 Add Student Profile (JWT Token එකෙන් Logged-in User ව Auto Select කර ගනී)
+    @PostMapping
+    public ResponseEntity<?> createStudent(@RequestBody Student student, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Unauthorized: Please log in first.");
+        }
+
+        try {
+            String username = authentication.getName(); // JWT Token එකෙන් Username එක අරගන්නවා
+            StudentResponse savedStudent = studentService.createStudentProfile(student, username);
+            return ResponseEntity.ok(savedStudent);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Update Student Profile
     @PutMapping("/{id}")
     public ResponseEntity<StudentResponse> updateStudent(@PathVariable Long id, @RequestBody Student studentDetails) {
-        return studentRepository.findById(id).map(student -> {
-            student.setFirstName(studentDetails.getFirstName());
-            student.setLastName(studentDetails.getLastName());
-            student.setEmail(studentDetails.getEmail());
-            student.setPhone(studentDetails.getPhone());
-            
-            Student updatedStudent = studentRepository.save(student);
-            String username = (updatedStudent.getUser() != null) ? updatedStudent.getUser().getUsername() : null;
-
-            StudentResponse response = new StudentResponse(
-                updatedStudent.getId(),
-                updatedStudent.getFirstName(),
-                updatedStudent.getLastName(),
-                updatedStudent.getEmail(),
-                updatedStudent.getPhone(),
-                username
-            );
-            return ResponseEntity.ok(response);
-        }).orElse(ResponseEntity.notFound().build());
+        return studentService.updateStudent(id, studentDetails)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // Delete Student
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteStudent(@PathVariable Long id) {
-        return studentRepository.findById(id).map(student -> {
-            studentRepository.delete(student);
+        if (studentService.deleteStudent(id)) {
             return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+        }
+        return ResponseEntity.notFound().build();
     }
 }

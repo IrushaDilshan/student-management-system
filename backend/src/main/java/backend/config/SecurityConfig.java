@@ -1,5 +1,6 @@
 package backend.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,10 +9,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthTokenFilter jwtAuthTokenFilter; // 👈 1. මෙතන Inject කරලා නැති නිසයි අරතන රතු වුණේ
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -25,9 +30,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configure(http))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Login, Signup APIs වලට Token නැතුව එන්න දෙන්න
-                .anyRequest().permitAll() // ඊළඟ Phase එකේදී /api/students, /api/courses වලට role checks එකතු කරනකම් permit-all තියමු
+                .requestMatchers("/api/auth/**").permitAll() // Login, Signup Public
+                .anyRequest().authenticated()               // අනික් හැම එකටම Token එක ඕනෑ
             );
+
+        // 👈 2. JWT Filter එක Spring Security Chain එකට එකතු කිරීම
+        http.addFilterBefore(jwtAuthTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
