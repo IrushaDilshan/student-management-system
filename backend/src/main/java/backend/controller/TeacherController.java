@@ -13,38 +13,41 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/teachers")
-@CrossOrigin(origins = "*")
-@PreAuthorize("hasRole('ADMIN')")
 public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
 
     // Get All Teachers (Admin / System Management)
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Teacher> getAllTeachers() {
         return teacherService.getAllTeachers();
     }
 
     // Get Teacher by ID
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<Teacher> getTeacherById(@PathVariable Long id) {
         return ResponseEntity.ok(teacherService.getTeacherById(id));
     }
 
     // Create Teacher Profile
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Teacher createTeacher(@Valid @RequestBody Teacher teacher) {
         return teacherService.createTeacher(teacher);
     }
 
     // Update Teacher Profile
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @Valid @RequestBody Teacher teacherDetails) {
         return ResponseEntity.ok(teacherService.updateTeacher(id, teacherDetails));
     }
 
     // Delete Teacher Profile
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTeacher(@PathVariable Long id) {
         teacherService.deleteTeacher(id);
