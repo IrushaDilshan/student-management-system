@@ -20,7 +20,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired
@@ -94,10 +93,6 @@ public class AuthController {
 
         if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             return ResponseEntity.badRequest().body("Error: Invalid username or password!");
-        }
-
-        if ("PENDING".equalsIgnoreCase(user.getStatus())) {
-            return ResponseEntity.badRequest().body("Error: Account is pending admin approval!");
         }
 
         String token = jwtUtils.generateJwtToken(user.getUsername(), user.getRole());
