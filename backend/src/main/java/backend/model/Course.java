@@ -32,4 +32,8 @@ public class Course {
     @Min(value = 1, message = "Credits must be at least 1")
     @Column(nullable = false)
     private Integer credits;
+
+    @ManyToOne
+    @JoinColumn(name = "teacher_id", referencedColumnName = "id")
+    private Teacher teacher;
 }

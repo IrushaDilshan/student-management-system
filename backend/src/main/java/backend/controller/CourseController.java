@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/courses")
-@CrossOrigin(origins = "*")
 public class CourseController {
 
     @Autowired
@@ -45,5 +44,14 @@ public class CourseController {
     public ResponseEntity<?> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return ResponseEntity.ok().build();
+    }
+
+    // Assign Teacher to Course
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{courseId}/assign-teacher/{teacherId}")
+    public ResponseEntity<Course> assignTeacher(
+            @PathVariable Long courseId, 
+            @PathVariable(required = false) Long teacherId) {
+        return ResponseEntity.ok(courseService.assignTeacherToCourse(courseId, teacherId));
     }
 }
