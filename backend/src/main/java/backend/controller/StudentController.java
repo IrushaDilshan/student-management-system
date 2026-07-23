@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/students")
-@CrossOrigin(origins = "*")
 public class StudentController {
 
     @Autowired
@@ -44,6 +43,51 @@ public List<StudentResponse> getAllStudents() {
         StudentResponse profile = studentService.getMyProfile(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found for user: " + username));
         return ResponseEntity.ok(profile);
+    }
+
+    // 🔐 Logged-in User ගේ My Profile එක Update කරන්න (PUT /api/students/me)
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMyProfile(@Valid @RequestBody Student studentDetails, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        String username = authentication.getName();
+        try {
+            StudentResponse updatedStudent = studentService.updateMyProfile(username, studentDetails);
+            return ResponseEntity.ok(updatedStudent);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    
+    // 🔐 Get My Enrolled Courses
+    @GetMapping("/my-courses")
+    public ResponseEntity<?> getMyCourses(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        String username = authentication.getName();
+        try {
+            return ResponseEntity.ok(studentService.getMyCourses(username));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // 🔐 Enroll in a Course
+    @PostMapping("/enroll/{courseId}")
+    public ResponseEntity<?> enrollInCourse(@PathVariable Long courseId, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        String username = authentication.getName();
+        try {
+            studentService.enrollInCourse(username, courseId);
+            return ResponseEntity.ok("Successfully enrolled in course!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 🔐 Add Student Profile (JWT Token එකෙන් Logged-in User ව Auto Select කර ගනී)
