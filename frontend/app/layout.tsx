@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import AppLayout from "./components/AppLayout";
+import AppLayout from "@/components/AppLayout";
+import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -19,10 +20,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} antialiased min-h-screen bg-gray-50`} suppressHydrationWarning>
-        <Toaster position="top-right" />
-        <AppLayout>
-          {children}
-        </AppLayout>
+        <AuthProvider>
+          <Toaster position="top-right" />
+          <AppLayout>
+            {children}
+          </AppLayout>
+        </AuthProvider>
       </body>
     </html>
   );
