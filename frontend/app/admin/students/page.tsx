@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
-import { Loader2, UserCheck, UserX, Mail, Phone, Shield } from "lucide-react";
+import { Loader2, UserCheck, UserX, Mail, Phone, Shield, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../lib/api";
 
@@ -33,6 +33,7 @@ export default function StudentsPage() {
   const [error, setError] = useState("");
   const [role, setRole] = useState<string | null>(null);
   const [showPending, setShowPending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const token = Cookies.get("token");
@@ -100,6 +101,23 @@ export default function StudentsPage() {
     }
   };
 
+  const filteredStudents = students.filter(student => {
+    const query = searchQuery.toLowerCase();
+    const fullName = `${student.firstName || ""} ${student.lastName || ""}`.toLowerCase();
+    const email = (student.email || "").toLowerCase();
+    const username = (student.username || student.user?.username || "").toLowerCase();
+    
+    return fullName.includes(query) || email.includes(query) || username.includes(query);
+  });
+
+  const filteredPendingStudents = pendingStudents.filter(student => {
+    const query = searchQuery.toLowerCase();
+    const email = (student.email || "").toLowerCase();
+    const username = (student.username || "").toLowerCase();
+    
+    return email.includes(query) || username.includes(query);
+  });
+
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to remove this student?")) return;
     try {
@@ -131,144 +149,167 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {showPending ? "Pending Approvals" : "Students"}
-          </h1>
-          <p className="text-gray-500 mt-1">
-            {showPending 
-              ? "Review and approve new student registrations." 
-              : "Manage enrolled students and their profiles."}
-          </p>
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden w-full">
+      <div className="flex-none bg-gray-50/90 backdrop-blur-md pb-4 pt-2 z-20 w-full space-y-4">
+        <div className="flex justify-between items-center bg-white p-6 md:p-8 rounded-[32px] shadow-[0_2px_20px_rgb(0,0,0,0.02)] border border-slate-100">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+              {showPending ? "Pending Approvals" : "Students"}
+            </h1>
+            <p className="text-slate-500 mt-2 text-lg">
+              {showPending 
+                ? "Review and approve new student registrations." 
+                : "Manage enrolled students and their profiles."}
+            </p>
+          </div>
+          
+          {role === "ADMIN" && (
+            <button 
+              onClick={() => showPending ? setShowPending(false) : fetchPendingStudents()}
+              className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm ${
+                showPending 
+                  ? "bg-slate-900 text-white hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5"
+                  : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100/50 hover:-translate-y-0.5"
+              }`}
+            >
+              {showPending ? (
+                <>Back to Students</>
+              ) : (
+                <>
+                  <Shield className="w-5 h-5" />
+                  Pending Approvals
+                </>
+              )}
+            </button>
+          )}
         </div>
-        
-        {role === "ADMIN" && (
-          <button 
-            onClick={() => showPending ? setShowPending(false) : fetchPendingStudents()}
-            className="btn-secondary w-auto flex items-center gap-2"
-          >
-            {showPending ? (
-              <>Back to Students</>
-            ) : (
-              <>
-                <Shield className="w-5 h-5 text-indigo-600" />
-                Pending Approvals
-              </>
-            )}
-          </button>
-        )}
+
+        <div className="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_2px_10px_rgb(0,0,0,0.03)] flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder={showPending ? "Search pending requests..." : "Search students by name, email, username..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border border-slate-200/60 rounded-[16px] focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm outline-none"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="glass-panel overflow-hidden">
-        {!showPending ? (
-          // ACTIVE STUDENTS VIEW
-          students.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              No students found in the system.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-100">
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">Name</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">Contact</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">Username</th>
-                    {role === "ADMIN" && (
-                      <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">Actions</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">
-                          {student.firstName ? `${student.firstName} ${student.lastName}` : (student.name || student.user?.username || student.username)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 text-sm text-gray-500">
-                          <span className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5"/> {student.email}</span>
-                          <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5"/> {student.phone}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                          @{student.username || "N/A"}
-                        </span>
-                      </td>
+      <div className="flex-1 overflow-y-auto pb-10 pr-2 custom-scrollbar">
+        <div className="bg-white rounded-[32px] p-4 lg:p-8 border border-slate-100 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.06)] transition-all duration-300 overflow-hidden">
+          {!showPending ? (
+            // ACTIVE STUDENTS VIEW
+            filteredStudents.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                No students found matching your search query.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100 rounded-xl">
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider rounded-tl-2xl">Name</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Contact</th>
+                      <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Username</th>
                       {role === "ADMIN" && (
-                        <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => handleDelete(student.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remove Student"
-                          >
-                            <UserX className="w-4 h-4" />
-                          </button>
-                        </td>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right rounded-tr-2xl">Actions</th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : (
-          // PENDING APPROVALS VIEW
-          pendingStudents.length === 0 ? (
-            <div className="p-12 text-center text-gray-500">
-              No pending student requests.
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredStudents.map((student) => (
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="font-bold text-slate-900 tracking-tight text-lg">
+                            {student.firstName ? `${student.firstName} ${student.lastName}` : (student.name || student.user?.username || student.username)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col gap-1.5 text-sm text-slate-500 font-medium">
+                            <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400"/> {student.email}</span>
+                            <span className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400"/> {student.phone}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="px-3 py-1.5 bg-slate-50 text-slate-600 text-xs font-bold rounded-lg border border-slate-200/60">
+                            @{student.username || "N/A"}
+                          </span>
+                        </td>
+                        {role === "ADMIN" && (
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => handleDelete(student.id)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100 shadow-sm hover:shadow"
+                                title="Remove Student"
+                              >
+                                <UserX className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-indigo-50/50 border-b border-indigo-100">
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">Username</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">Email</th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {pendingStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-indigo-50/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">@{student.username}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                          <Mail className="w-3.5 h-3.5"/> {student.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => handleApprove(student.id)}
-                            className="px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                            Approve
-                          </button>
-                          <button 
-                            onClick={() => handleReject(student.id)}
-                            className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                          >
-                            <UserX className="w-4 h-4" />
-                            Reject
-                          </button>
-                        </div>
-                      </td>
+            // PENDING APPROVALS VIEW
+            filteredPendingStudents.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                No pending student requests matching your search query.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-indigo-50/50 border-b border-indigo-100/50">
+                      <th className="px-6 py-4 text-xs font-bold text-indigo-800 uppercase tracking-wider rounded-tl-2xl">Username</th>
+                      <th className="px-6 py-4 text-xs font-bold text-indigo-800 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-4 text-xs font-bold text-indigo-800 uppercase tracking-wider text-right rounded-tr-2xl">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredPendingStudents.map((student) => (
+                      <tr key={student.id} className="hover:bg-indigo-50/30 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="font-bold text-slate-900 text-lg tracking-tight">@{student.username}</div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
+                            <Mail className="w-4 h-4 text-slate-400"/> {student.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex justify-end gap-3 opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleApprove(student.id)}
+                              className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200/50 hover:bg-emerald-100 hover:shadow-sm rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                            >
+                              <UserCheck className="w-4 h-4" />
+                              Approve
+                            </button>
+                            <button 
+                              onClick={() => handleReject(student.id)}
+                              className="px-4 py-2 bg-red-50 text-red-700 border border-red-200/50 hover:bg-red-100 hover:shadow-sm rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                            >
+                              <UserX className="w-4 h-4" />
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
