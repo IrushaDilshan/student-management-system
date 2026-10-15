@@ -31,6 +31,7 @@ export default function TeacherProfile() {
   const [saving, setSaving] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"general" | "security">("general");
+  const [phoneError, setPhoneError] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -84,12 +85,36 @@ export default function TeacherProfile() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === "phone") {
+      const numericValue = e.target.value.replace(/\D/g, "");
+      setFormData({ ...formData, phone: numericValue });
+      if (numericValue && !/^0\d{9}$/.test(numericValue)) {
+        setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+      } else {
+        setPhoneError("");
+      }
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    const value = formData.phone;
+    if (value && !/^0\d{9}$/.test(value)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+    } else {
+      setPhoneError("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (formData.phone && !/^0\d{9}$/.test(formData.phone)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+      return;
+    }
+
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
       toast.error("New passwords do not match!");
       return;
@@ -241,8 +266,16 @@ export default function TeacherProfile() {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200/60 rounded-[16px] focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                        onBlur={handlePhoneBlur}
+                        className={`w-full px-4 py-3 bg-slate-50/50 border rounded-[16px] focus:bg-white focus:ring-2 transition-all outline-none ${
+                          phoneError 
+                            ? "border-red-500 focus:ring-red-500/10 focus:border-red-500" 
+                            : "border-slate-200/60 focus:ring-blue-500 focus:border-blue-500"
+                        }`}
                       />
+                      {phoneError && (
+                        <p className="text-red-500 text-xs font-semibold mt-1">{phoneError}</p>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 md:col-span-2">
@@ -260,8 +293,8 @@ export default function TeacherProfile() {
                   <div className="pt-6 border-t border-slate-100 flex justify-end">
                     <button
                       type="submit"
-                      disabled={saving}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-colors duration-200 active:scale-[0.98]"
+                      disabled={saving || !!phoneError}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       {saving ? "Saving..." : "Save Changes"}

@@ -6,14 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2, Users, BookOpen, ChevronRight, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../lib/api";
-
-interface Course {
-  id: number;
-  courseCode: string;
-  courseName: string;
-  description: string;
-  credits: number;
-}
+import CourseCard, { Course } from "@/components/ui/CourseCard";
 
 interface Student {
   id: number;
@@ -118,50 +111,14 @@ export default function TeacherCourses() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => {
-            const gradients = [
-              "from-blue-500 to-indigo-600",
-              "from-emerald-400 to-teal-500",
-              "from-orange-400 to-rose-500",
-              "from-purple-500 to-fuchsia-600",
-              "from-cyan-400 to-blue-500",
-              "from-pink-500 to-rose-500"
-            ];
-            const bannerGradient = gradients[course.id % gradients.length];
-            return (
-              <div key={course.id} className="group relative bg-white rounded-[24px] p-5 border border-slate-100/50 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${bannerGradient} text-white shadow-sm flex items-center gap-1.5`}>
-                      <BookOpen className="w-3 h-3" />
-                      {course.courseCode}
-                    </span>
-                  </div>
-                  
-                  <h2 className="text-xl font-bold tracking-tight text-slate-900 mb-2 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-slate-900 group-hover:to-slate-500 transition-all line-clamp-2">
-                    {course.courseName}
-                  </h2>
-                  <p className="text-xs text-slate-500 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
-                    {course.description}
-                  </p>
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-slate-100/50 flex items-center justify-between">
-                  <div className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                    Credits: <span className="w-6 h-6 flex items-center justify-center text-blue-700 bg-blue-50 border border-blue-100/50 rounded-md font-bold text-[10px]">{course.credits}</span>
-                  </div>
-                  <button 
-                    onClick={() => viewStudents(course)}
-                    className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-all hover:translate-x-0.5"
-                  >
-                    <Users className="w-4 h-4" />
-                    Students
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {courses.map((course) => (
+            <CourseCard
+              key={course.id}
+              course={course}
+              role="teacher"
+              onViewStudents={viewStudents}
+            />
+          ))}
         </div>
       )}
 

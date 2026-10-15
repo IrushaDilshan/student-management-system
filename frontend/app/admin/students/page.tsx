@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2, UserCheck, UserX, Mail, Phone, Shield, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../lib/api";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Student {
   id: number;
@@ -34,6 +35,20 @@ export default function StudentsPage() {
   const [role, setRole] = useState<string | null>(null);
   const [showPending, setShowPending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const token = Cookies.get("token");
@@ -79,26 +94,45 @@ export default function StudentsPage() {
     }
   };
 
-  const handleApprove = async (id: number) => {
-    try {
-      await api.put(`/auth/admin/approve-student/${id}?status=ACTIVE`);
-      setPendingStudents(pendingStudents.filter((student) => student.id !== id));
-      fetchStudents();
-      toast.success("Student approved successfully");
-    } catch (err) {
-      toast.error("Failed to approve student");
-    }
+  const handleApprove = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Approve Student Request",
+      message: "Are you sure you want to approve this student registration request?",
+      confirmText: "Approve",
+      cancelText: "Cancel",
+      type: "info",
+      onConfirm: async () => {
+        try {
+          await api.put(`/auth/admin/approve-student/${id}?status=ACTIVE`);
+          setPendingStudents((prev) => prev.filter((student) => student.id !== id));
+          fetchStudents();
+          toast.success("Student approved successfully");
+        } catch (err) {
+          toast.error("Failed to approve student");
+        }
+      },
+    });
   };
 
-  const handleReject = async (id: number) => {
-    if (!confirm("Are you sure you want to reject this request?")) return;
-    try {
-      await api.put(`/auth/admin/approve-student/${id}?status=REJECTED`);
-      setPendingStudents(pendingStudents.filter((student) => student.id !== id));
-      toast.success("Student request rejected");
-    } catch (err) {
-      toast.error("Failed to reject student");
-    }
+  const handleReject = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Reject Registration Request",
+      message: "Are you sure you want to reject this student registration request?",
+      confirmText: "Reject",
+      cancelText: "Cancel",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          await api.put(`/auth/admin/approve-student/${id}?status=REJECTED`);
+          setPendingStudents((prev) => prev.filter((student) => student.id !== id));
+          toast.success("Student request rejected successfully");
+        } catch (err) {
+          toast.error("Failed to reject student");
+        }
+      },
+    });
   };
 
   const filteredStudents = students.filter(student => {
@@ -118,16 +152,25 @@ export default function StudentsPage() {
     return email.includes(query) || username.includes(query);
   });
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this student?")) return;
-    try {
-      await api.delete(`/students/${id}`);
-      setStudents(prev => prev.filter(s => s.id !== id));
-      toast.success("Student removed successfully");
-    } catch (err: any) {
-      console.error(err.response?.data);
-      toast.error(err.response?.data?.message || "Failed to delete student");
-    }
+  const handleDelete = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Remove Student Account",
+      message: "Are you sure you want to remove this student? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          await api.delete(`/students/${id}`);
+          setStudents((prev) => prev.filter(s => s.id !== id));
+          toast.success("Student removed successfully");
+        } catch (err: any) {
+          console.error(err.response?.data);
+          toast.error(err.response?.data?.message || "Failed to delete student");
+        }
+      },
+    });
   };
 
   if (loading && !showPending && students.length === 0) {
@@ -240,7 +283,7 @@ export default function StudentsPage() {
                         </td>
                         {role === "ADMIN" && (
                           <td className="px-6 py-5 text-right">
-                            <div className="flex justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <div className="flex justify-end opacity-100 flex items-center gap-2">
                               <button 
                                 onClick={() => handleDelete(student.id)}
                                 className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100 shadow-sm hover:shadow"
@@ -285,7 +328,7 @@ export default function StudentsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-5 text-right">
-                          <div className="flex justify-end gap-3 opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <div className="flex justify-end opacity-100 flex items-center gap-2">
                             <button 
                               onClick={() => handleApprove(student.id)}
                               className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200/50 hover:bg-emerald-100 hover:shadow-sm rounded-xl text-sm font-bold transition-all flex items-center gap-2"
@@ -311,6 +354,16 @@ export default function StudentsPage() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

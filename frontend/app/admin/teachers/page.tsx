@@ -6,6 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2, UserX, Mail, Phone, GraduationCap, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../lib/api";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Teacher {
   id: number;
@@ -31,6 +32,21 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    type?: "danger" | "warning" | "info";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+  const [phoneError, setPhoneError] = useState("");
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,29 +105,62 @@ export default function TeachersPage() {
     return fullName.includes(query) || email.includes(query) || dept.includes(query) || username.includes(query);
   });
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to remove this teacher?")) return;
-    try {
-      await api.delete(`/teachers/${id}`);
-      setTeachers(teachers.filter((teacher) => teacher.id !== id));
-      toast.success("Teacher removed successfully");
-    } catch (err) {
-      toast.error("Failed to delete teacher");
-    }
+  const handleDelete = (id: number) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Remove Teacher Account",
+      message: "Are you sure you want to remove this teacher? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          await api.delete(`/teachers/${id}`);
+          setTeachers((prev) => prev.filter((teacher) => teacher.id !== id));
+          toast.success("Teacher removed successfully");
+        } catch {
+          toast.error("Failed to delete teacher");
+        }
+      },
+    });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === "phone") {
+      const numericValue = e.target.value.replace(/\D/g, "");
+      setFormData({ ...formData, phone: numericValue });
+      if (numericValue && !/^0\d{9}$/.test(numericValue)) {
+        setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+      } else {
+        setPhoneError("");
+      }
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    const value = formData.phone;
+    if (value && !/^0\d{9}$/.test(value)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+    } else {
+      setPhoneError("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.phone && !/^0\d{9}$/.test(formData.phone)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+      return;
+    }
     setIsSubmitting(true);
     try {
       await api.post("/admin/teachers", formData);
       toast.success("Teacher created successfully");
       setIsModalOpen(false);
       setFormData({ username: "", email: "", password: "", firstName: "", lastName: "", phone: "", department: "" });
+      setPhoneError("");
       await fetchTeachers();
     } catch (err: any) {
       console.error("Error creating teacher:", err);
@@ -218,7 +267,7 @@ export default function TeachersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-5 text-right">
-                        <div className="flex justify-end opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <div className="flex justify-end opacity-100 flex items-center gap-2">
                           <button 
                             onClick={() => handleDelete(teacher.id)}
                             className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100 shadow-sm hover:shadow"
@@ -267,7 +316,21 @@ export default function TeachersPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-bold text-slate-700">Phone (Optional)</label>
-                  <input type="text" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200/60 rounded-[16px] focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all shadow-sm outline-none" />
+                  <input 
+                    type="text" 
+                    name="phone" 
+                    value={formData.phone} 
+                    onChange={handleInputChange} 
+                    onBlur={handlePhoneBlur}
+                    className={`w-full px-4 py-3 bg-slate-50/50 border rounded-[16px] focus:bg-white focus:ring-4 transition-all shadow-sm outline-none ${
+                      phoneError 
+                        ? "border-red-500 focus:ring-red-500/10 focus:border-red-500" 
+                        : "border-slate-200/60 focus:ring-purple-500/10 focus:border-purple-500"
+                    }`}
+                  />
+                  {phoneError && (
+                    <p className="text-red-500 text-xs font-semibold mt-1">{phoneError}</p>
+                  )}
                 </div>
               </div>
 
@@ -294,7 +357,7 @@ export default function TeachersPage() {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:text-slate-900 transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                <button type="submit" disabled={isSubmitting || !!phoneError} className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Teacher"}
                 </button>
               </div>
@@ -302,6 +365,16 @@ export default function TeachersPage() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
+        type={confirmConfig.type}
+        onConfirm={confirmConfig.onConfirm}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

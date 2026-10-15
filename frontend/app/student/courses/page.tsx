@@ -8,20 +8,7 @@ import {
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import api from "../../../lib/api";
-
-interface Course {
-  id: number;
-  courseCode: string;
-  courseName: string;
-  description: string;
-  teacher?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-  };
-  lecturerName?: string;
-  teacherName?: string;
-}
+import CourseCard, { Course } from "@/components/ui/CourseCard";
 
 export default function StudentCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -212,99 +199,18 @@ export default function StudentCourses() {
             const isEnrolling = enrollingIds.has(course.id);
             const credits = getMockCredits(course.id);
             
-            // Generate a deterministic accent color based on course ID
-            const gradients = [
-              "from-blue-500 to-indigo-600",
-              "from-emerald-400 to-teal-500",
-              "from-orange-400 to-rose-500",
-              "from-purple-500 to-fuchsia-600",
-              "from-cyan-400 to-blue-500",
-              "from-pink-500 to-rose-500"
-            ];
-            const bannerGradient = gradients[course.id % gradients.length];
-            
             return (
-              <div 
-                key={course.id} 
-                className={`group relative bg-white rounded-[24px] p-5 border border-gray-100/50 shadow-[0_2px_10px_rgb(0,0,0,0.03)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 flex ${viewMode === "LIST" ? "flex-col sm:flex-row gap-5" : "flex-col"}`}
-              >
-                {/* Modern Minimalist Header */}
-                <div className={`flex justify-between items-start mb-4 ${viewMode === "LIST" ? "w-full sm:w-48 shrink-0 flex-col sm:flex-row gap-4" : ""}`}>
-                  <div className="flex flex-col sm:flex-row gap-2 w-full justify-between items-start">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${bannerGradient} text-white shadow-sm`}>
-                      {course.courseCode}
-                    </span>
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      {isEnrolled && (
-                        <span className="px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold border border-green-500/20 flex items-center gap-1.5">
-                          <CheckCircle className="w-3 h-3" /> Enrolled
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col flex-1">
-                  <h3 className="text-xl font-bold tracking-tight text-gray-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-gray-900 group-hover:to-gray-500 transition-all leading-tight line-clamp-2">
-                    {course.courseName}
-                  </h3>
-                  
-                  <p className="text-xs text-gray-500 mb-4 line-clamp-2 min-h-[32px] leading-relaxed">
-                    {course.description}
-                  </p>
-
-                  <div className="mt-auto">
-                    {/* Instructor & Credits Block - Ultra Minimal */}
-                    <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100/50">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-gray-100 to-gray-200 flex items-center justify-center border border-gray-200/50 shadow-sm">
-                          {course.teacher ? (
-                            <UserIcon className="w-3.5 h-3.5 text-gray-500" />
-                          ) : (
-                            <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
-                          )}
-                        </div>
-                        <span className="text-xs font-semibold text-gray-700 line-clamp-1">
-                          {course.teacher 
-                            ? `${course.teacher.firstName} ${course.teacher.lastName}`
-                            : (course.lecturerName || course.teacherName || "TBA")}
-                        </span>
-                      </div>
-                      <div className="w-1 h-1 rounded-full bg-gray-300"></div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-600">{credits} Credits</span>
-                      </div>
-                    </div>
-
-                    {/* Enroll Button Area */}
-                    {isEnrolled ? (
-                      <button 
-                        className="w-full py-2.5 text-sm font-bold rounded-xl flex items-center justify-center gap-2 bg-green-500/10 text-green-700 cursor-default transition-all"
-                        disabled
-                      >
-                        <CheckCircle className="w-4 h-4" /> Already Enrolled
-                      </button>
-                    ) : (
-                      <button 
-                        className={`w-full py-2.5 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 group/btn ${
-                          isProfileMissing
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                            : "bg-gray-900 hover:bg-gray-800 text-white shadow-lg shadow-gray-900/20 hover:shadow-gray-900/30 hover:-translate-y-0.5"
-                        }`}
-                        disabled={isEnrolling || isProfileMissing}
-                        onClick={() => handleEnroll(course.id, course.courseName)}
-                      >
-                        {isProfileMissing ? "Approval Pending" : isEnrolling ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Enrolling...</>
-                        ) : (
-                          <>Enroll in Course <ArrowRight className="w-4 h-4 opacity-70 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all" /></>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <CourseCard
+                key={course.id}
+                course={course}
+                role="student"
+                isEnrolled={isEnrolled}
+                isEnrolling={isEnrolling}
+                isProfileMissing={isProfileMissing}
+                credits={credits}
+                viewMode={viewMode}
+                onEnroll={handleEnroll}
+              />
             );
           })}
         </div>

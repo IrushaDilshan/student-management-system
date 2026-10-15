@@ -19,6 +19,7 @@ export default function StudentProfile() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"general" | "security">("general");
+  const [phoneError, setPhoneError] = useState("");
 
   // Profile Form State
   const [formData, setFormData] = useState({
@@ -60,8 +61,31 @@ export default function StudentProfile() {
     }
   };
 
+  const handlePhoneChange = (value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+    setFormData(prev => ({ ...prev, phone: numericValue }));
+    if (numericValue && !/^0\d{9}$/.test(numericValue)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+    } else {
+      setPhoneError("");
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    const value = formData.phone;
+    if (value && !/^0\d{9}$/.test(value)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+    } else {
+      setPhoneError("");
+    }
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.phone && !/^0\d{9}$/.test(formData.phone)) {
+      setPhoneError("Please enter a valid 10-digit phone number (e.g., 07XXXXXXXX)");
+      return;
+    }
     setIsUpdatingProfile(true);
     
     try {
@@ -217,10 +241,18 @@ export default function StudentProfile() {
                     <input
                       type="text"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={handlePhoneBlur}
                       placeholder="077XXXXXXX"
-                      className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200/60 rounded-[16px] focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                      className={`w-full px-4 py-3 bg-gray-50/50 border rounded-[16px] focus:bg-white focus:ring-2 transition-all outline-none ${
+                        phoneError 
+                          ? "border-red-500 focus:ring-red-500/10 focus:border-red-500" 
+                          : "border-gray-200/60 focus:ring-blue-500 focus:border-blue-500"
+                      }`}
                     />
+                    {phoneError && (
+                      <p className="text-red-500 text-xs font-semibold mt-1">{phoneError}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -250,8 +282,8 @@ export default function StudentProfile() {
               <div className="flex justify-end pt-6 border-t border-gray-100 mt-6">
                 <button 
                   type="submit" 
-                  disabled={isUpdatingProfile}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium flex justify-center items-center gap-2 transition-colors duration-200 active:scale-[0.98]"
+                  disabled={isUpdatingProfile || !!phoneError}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium flex justify-center items-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdatingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {isUpdatingProfile ? "Saving..." : "Save Details"}
