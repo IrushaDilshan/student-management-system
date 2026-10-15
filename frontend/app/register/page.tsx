@@ -38,18 +38,23 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err: any) {
-      if (err.response && err.response.data) {
-        // Handle validation error object or string
-        if (typeof err.response.data === "string") {
-          setError(err.response.data);
-        } else if (err.response.data.message) {
-          setError(err.response.data.message);
-        } else {
-          setError("Registration failed. Please check your details.");
-        }
+    } catch (err: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const axiosError = err as any;
+      const responseData = axiosError.response?.data;
+      const rawMessage = (typeof responseData === "string" ? responseData : responseData?.message) || axiosError.message || "";
+      const lowerMessage = rawMessage.toLowerCase();
+
+      if (
+        lowerMessage.includes("users_email_key") ||
+        lowerMessage.includes("already exists") ||
+        lowerMessage.includes("duplicate key")
+      ) {
+        setError("This email address is already registered. Please use a different email or sign in.");
+      } else if (lowerMessage.includes("username") || lowerMessage.includes("users_username_key")) {
+        setError("This username is already taken. Please choose another one.");
       } else {
-        setError("Network error. Please try again later.");
+        setError("Registration failed. Please check your details and try again.");
       }
     }
   };
