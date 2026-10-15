@@ -1,5 +1,0 @@
-{
-  "java.jdt.ls.lombokSupport.enabled": true,
-  "java.compile.annotationProcessing.enabled": true,
-  "java.configuration.updateBuildConfiguration": "automatic"
-}
