@@ -2,9 +2,11 @@ package backend.service;
 
 import backend.model.Course;
 import backend.repository.CourseRepository;
+import backend.repository.StudentRepository;
 import backend.repository.TeacherRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import backend.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -18,6 +20,9 @@ public class CourseService {
 
     @Autowired
     private TeacherRepository teacherRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     public List<Course> getAllCourses() {
         return courseRepository.findAll();
@@ -39,9 +44,18 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
+    @Transactional
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found with id " + id));
+        
+        // Remove course enrollment from any students before deleting to prevent FK constraint violation
+        List<backend.model.Student> enrolledStudents = studentRepository.findByEnrolledCourses_Id(id);
+        for (backend.model.Student student : enrolledStudents) {
+            student.getEnrolledCourses().remove(course);
+            studentRepository.save(student);
+        }
+
         courseRepository.delete(course);
     }
 
